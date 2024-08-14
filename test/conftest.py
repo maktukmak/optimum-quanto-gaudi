@@ -14,6 +14,8 @@
 
 import pytest
 import torch
+import habana_frameworks.torch.core as htcore
+import os
 
 
 devices = ["cpu"]
@@ -21,8 +23,8 @@ if torch.cuda.is_available():
     devices += ["cuda"]
 elif torch.backends.mps.is_available():
     devices += ["mps"]
-
-
+elif torch.hpu.is_available():
+    devices += ["hpu"]
 @pytest.fixture(scope="module", params=devices)
 def device(request):
     return torch.device(request.param)

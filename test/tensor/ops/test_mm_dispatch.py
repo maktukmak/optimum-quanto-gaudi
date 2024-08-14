@@ -36,6 +36,8 @@ def test_qactivation_qweight_matmul(dtype, in_features, hidden, out_features, de
 @pytest.mark.parametrize("batch_size", [1, 10])
 @pytest.mark.parametrize("a_shape, b_shape", [[(16, 32), (32, 24)], [(5, 10), (10, 6)]])
 def test_qactivation_qactivation_bmm(dtype, batch_size, a_shape, b_shape, device):
+    if device.type == "hpu" and dtype == torch.float16:
+        pytest.skip("unsupported configuration due to FP16 truncation")
     qa = random_qactivation((batch_size,) + a_shape, qint8, dtype=dtype).to(device)
     qb = random_qactivation((batch_size,) + b_shape, qint8, dtype=dtype).to(device)
     qbmm = torch.bmm(qa, qb)

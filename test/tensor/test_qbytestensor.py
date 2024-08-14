@@ -30,6 +30,9 @@ def test_qbytestensor_instantiate(input_shape, dtype, qtype, device):
             pytest.skip("float8 types are not supported on MPS device")
         min_value = torch.finfo(qtype.dtype).min
         max_value = torch.finfo(qtype.dtype).max
+        if device.type == "hpu":
+            min_value = torch.finfo(torch.float8_e4m3fnuz).min
+            max_value = torch.finfo(torch.float8_e4m3fnuz).max
         data = (torch.rand(input_shape) * max_value + min_value).to(qtype.dtype)
     else:
         max_value = torch.iinfo(qtype.dtype).max

@@ -57,7 +57,13 @@ def absmax_scale(base: torch.Tensor, qtype: qtype = qint8, axis: Optional[int] =
     else:
         dim = axis_to_dim(base, axis)
         qranges = torch.amax(base, dim=dim, keepdim=True)
-    info = dtype_info(qtype.dtype)
+    
+    # Currently HPU implements float8_e4m3fnuz under float8_e4m3fn
+    if base.device.type == "hpu" and qtype.dtype == torch.float8_e4m3fn:
+        info = dtype_info(torch.float8_e4m3fnuz)
+    else:
+        info = dtype_info(qtype.dtype)
+        
     return qranges / info.max
 
 

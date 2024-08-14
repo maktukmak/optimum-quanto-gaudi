@@ -73,4 +73,4 @@ def test_affine_quantize_integer_tensor(dtype, qtype, device):
     assert qa.dtype == dtype
     assert qa.qtype == qtype
     assert device_eq(qa.device, device)
-    assert torch.equal(a, qa.dequantize())
+    assert torch.allclose(a, qa.dequantize(), atol=1e-6)

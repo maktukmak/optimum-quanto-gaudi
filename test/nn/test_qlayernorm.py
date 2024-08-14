@@ -24,7 +24,7 @@ def _test_quantize_layernorm(batch_size, tokens, embeddings, dtype, activations,
     # Instantiate a normalization layer
     norm = torch.nn.LayerNorm(embeddings).to(dtype).to(device)
     qnorm = QLayerNorm.from_module(norm, activations=activations)
-    qinputs = random_qactivation((batch_size,) + (tokens, embeddings), qtype=activations, dtype=dtype).to(device)
+    qinputs = random_qactivation((batch_size,) + (tokens, embeddings), qtype=activations, dtype=dtype, device=device.type)
     # Calibrate to avoid clipping and to set the correct dtype
     with torch.no_grad(), Calibration():
         qout = qnorm(qinputs)
@@ -62,6 +62,8 @@ def test_quantize_layernorm_float32_activations_int8(batch_size, tokens, embeddi
 )
 @pytest.mark.skip_device("mps")
 def test_quantize_layernorm_float16_activations_float8(batch_size, tokens, embeddings, activations, device):
+    if device.type == "hpu":
+        pytest.skip("HPU has numerical issue in FP16")
     _test_quantize_layernorm(batch_size, tokens, embeddings, torch.float16, activations, device)
 
 

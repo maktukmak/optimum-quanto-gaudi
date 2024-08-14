@@ -53,7 +53,13 @@ class SymmetricQuantizer(Function):
         data = base / scale
         if not qtype.is_floating_point:
             data = torch.round(data)
-        info = dtype_info(qtype.dtype)
+
+        # Currently HPU implements float8_e4m3fnuz under float8_e4m3fn
+        if data.device.type == "hpu" and qtype.dtype == torch.float8_e4m3fn:
+            info = dtype_info(torch.float8_e4m3fnuz)
+        else:
+            info = dtype_info(qtype.dtype)
+            
         data = torch.clamp(data, min=info.min, max=info.max).to(qtype.dtype)
         # The instantiation of the quantized tensor must happen within the context of the Function
         # for the autograd magic to work.

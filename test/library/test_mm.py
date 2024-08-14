@@ -15,6 +15,7 @@
 import pytest
 import torch
 from helpers import assert_similar, random_tensor
+import habana_frameworks.torch.core as htcore
 
 from optimum.quanto import AWQPackedTensor, AWQPacking
 

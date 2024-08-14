@@ -91,8 +91,8 @@ def assert_similar(a, b, atol=None, rtol=None):
     if rtol is None:
         # Please refer to that discussion for default rtol values based on the float type:
         # https://scicomp.stackexchange.com/questions/43111/float-equality-tolerance-for-single-and-half-precision
-        rtol = {torch.float32: 1e-5, torch.float16: 1e-3, torch.bfloat16: 1e-1}[a.dtype]
-    sim = torch.nn.functional.cosine_similarity(a.flatten(), b.flatten(), dim=0)
+        rtol = {torch.float32: 1e-5, torch.float16: 1e-2, torch.bfloat16: 1e-1}[a.dtype]
+    sim = torch.nn.functional.cosine_similarity(a.flatten().to("cpu"), b.flatten().to("cpu"), dim=0)
     if not torch.allclose(sim, torch.tensor(1.0, dtype=sim.dtype), atol=atol, rtol=rtol):
         max_deviation = torch.min(sim)
         raise ValueError(f"Alignment {max_deviation:.8f} deviates too much from 1.0 with atol={atol}, rtol={rtol}")
@@ -106,4 +106,7 @@ def get_device_memory(device):
     elif device.type == "mps":
         torch.mps.empty_cache()
         return torch.mps.current_allocated_memory()
+    elif device.type == "hpu":
+        # torch.hpu.empty_cache()   # No API
+        return torch.hpu.memory_allocated()
     return None

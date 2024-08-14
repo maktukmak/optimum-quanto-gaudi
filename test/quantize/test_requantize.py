@@ -50,6 +50,8 @@ def save_and_reload_state_dict(state_dict, serialization):
 def test_requantize_serialized_model(
     input_features, hidden_features, output_features, weights, activations, dtype, serialization, device
 ):
+    if device.type == "hpu" and serialization == "weights_only":
+        pytest.skip("HPU does not support weights_only load")
     model = MLP(input_features, hidden_features, output_features).to(dtype).to(device)
     quantize(model, weights=weights, activations=activations)
     inputs = random_tensor((1, 10, input_features), dtype=dtype).to(device)
@@ -74,6 +76,7 @@ def test_requantize_serialized_model(
 
 
 @pytest.mark.skip_device("cpu")
+@pytest.mark.skip_device("hpu")
 @pytest.mark.parametrize("weights", [qint8], ids=["w-qint8"])
 @pytest.mark.parametrize("dtype", [torch.float16, torch.float32], ids=["fp16", "fp32"])
 @pytest.mark.parametrize("weights_only", [True, False], ids=["weights-only", "pickle"])

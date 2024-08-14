@@ -60,6 +60,8 @@ def test_symmetric_quantize_int(input_shape, dtype, qtype, axis, device):
     ids=["per-tensor", "first-axis", "last-axis"],
 )
 def test_symmetric_quantize_float8(input_shape, dtype, qtype, axis, device):
+    if device.type == "hpu" and dtype == torch.float16:
+        pytest.skip("HPU FP16 problem")
     a = random_tensor(input_shape, dtype=dtype).to(device)
     scale = absmax_scale(a, qtype=qtype, axis=axis)
     qa = SymmetricQuantizer.apply(a, qtype, axis, scale)

@@ -44,6 +44,7 @@ def test_pack_tinygemm_tensor(in_features, out_features, random, device):
 
 
 @pytest.mark.skip_device("mps")  # Only available with pytorch 2.4
+@pytest.mark.skip_device("hpu")
 def test_move_tinygemm_packed_tensor(device):
     if device.type == "cuda" and torch.cuda.get_device_capability()[0] < 8:
         pytest.skip(reason="CUDA device >= sm80 not available")

@@ -52,6 +52,23 @@ def qbytes_int_mm(activations: torch.Tensor, weights: torch.Tensor, output_scale
     return fp32_output.to(output_scales.dtype)
 
 
+def qbytes_float_mm(activations: torch.Tensor, weights: torch.Tensor, output_scales: torch.Tensor) -> torch.Tensor:
+    in_features = activations.shape[-1]
+    out_features = weights.shape[0]
+    # torch._int_mm works on transposed weights, i.e (in_features, out_features)
+    weights = weights.t()
+    if activations.ndim == 2:
+        out_data = torch.matmul(activations, weights)
+    else:
+        output_shape = activations.shape[:-1] + (out_features,)
+        out_data = torch.matmul(activations.view(-1, in_features), weights)
+        out_data = out_data.view(output_shape)
+    # We must evaluate the output as float32 because the multiplication
+    # of the int32 data by the scales might overflow
+    fp32_output = out_data.to(torch.float32) * output_scales.t()
+    return fp32_output.to(output_scales.dtype)
+
+
 def qbytes_int8pack_mm(activations: torch.Tensor, weights: torch.Tensor, output_scales: torch.Tensor) -> torch.Tensor:
     # torch._weight_int8pack_mm expects a vector of scales
     output_scales = output_scales.flatten()
@@ -87,6 +104,24 @@ def qbytes_mm_impl_cuda(activations: torch.Tensor, weights: torch.Tensor, output
         and out_features % 8 == 0
     ):
         return qbytes_int_mm(activations, weights, output_scales)
+    return qbytes_mm(activations, weights, output_scales)
+
+
+@torch.library.impl("quanto::qbytes_mm", "HPU")
+def qbytes_mm_impl_hpu(activations: torch.Tensor, weights: torch.Tensor, output_scales: torch.Tensor) -> torch.Tensor:
+    assert activations.ndim in (2, 3)
+    in_features = activations.shape[-1]
+    tokens = activations.shape[0] if activations.ndim == 2 else activations.shape[0] * activations.shape[1]
+    out_features = weights.shape[0]
+    if (
+        activations.dtype == torch.float8_e5m2
+        and weights.dtype == torch.float8_e5m2
+        and tokens > 16
+        and tokens % 8 == 0
+        and in_features % 8 == 0
+        and out_features % 8 == 0
+    ):
+        return qbytes_float_mm(activations, weights, output_scales)
     return qbytes_mm(activations, weights, output_scales)
 
 
